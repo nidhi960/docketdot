@@ -202,10 +202,10 @@ router.post("/s3/presigned-url", auth, async (req, res) => {
   }
 });
 // 6. Get Presigned URL for Download (secure file access)
-// 6. Get Presigned URL for Download (Secure file access with existence check)
 router.get("/download-url", auth, checkPermission, async (req, res) => {
   try {
-    const { fileKey } = req.query;
+    // ✅ 1. Get filename from query
+    const { fileKey, filename } = req.query;
 
     if (!fileKey) {
       return res.status(400).json({ message: "fileKey is required" });
@@ -233,10 +233,16 @@ router.get("/download-url", auth, checkPermission, async (req, res) => {
       throw error; // Throw other errors to the main catch block
     }
 
-    // --- STEP 2: GENERATE URL ---
+    // --- STEP 2: GENERATE URL WITH DOWNLOAD HEADER ---
+    
+    // Fallback if no filename provided
+    const finalFilename = filename ? filename : cleanKey.split("/").pop();
+
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: cleanKey,
+      // 👇 THIS LINE FORCES THE BROWSER TO DOWNLOAD
+      ResponseContentDisposition: `attachment; filename="${finalFilename}"`,
     });
 
     const downloadUrl = await getSignedUrl(s3Client, command, {
@@ -541,3 +547,4 @@ router.get("/unread-count", auth, checkPermission, async (req, res) => {
 });
 
 export default router;
+
