@@ -29,6 +29,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 8080;
 
 // ✅ FIX 1: Create the Server INSTANCE first
@@ -123,3 +124,4 @@ initSocket(server);
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on ${PORT}`);
 });
+
