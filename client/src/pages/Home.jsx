@@ -13,9 +13,9 @@ export default function Login() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
-    "Secure IP management built on enterprise-grade AWS cloud infrastructure",
-    "AI-powered docketing management that streamlines and accelerates decision-making",
     "Modern IP docketing built for accuracy, intelligence, and scale",
+    "AI-powered docketing management that streamlines and accelerates decision-making",
+    "Secure IP management built on enterprise-grade AWS cloud infrastructure",
   ];
 
   useEffect(() => {
@@ -337,3 +337,4 @@ export default function Login() {
     </div>
   );
 }
+
