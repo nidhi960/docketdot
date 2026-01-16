@@ -5,7 +5,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import auth from "../middleware/auth.js";
-import ChatSession from "../models/ChatSession.js";
+import ChatSession from "../models/Chatsession.js";
 import {
   classifyIntent,
   extractEntities,
@@ -590,3 +590,4 @@ router.get("/health", async (req, res) => {
 });
 
 export default router;
+
