@@ -10,17 +10,16 @@ import checkPermission from "../middleware/checkPermission.js";
 
 const router = express.Router();
 
-// Ensure NODE_ENV is set to 'production' in Railway Variables
-const environment = process.env.NODE_ENV;
-const cookieExpireTime = process.env.JWT_COOKIE_EXPIRES_IN;
+const cookieExpireTime = process.env.JWT_COOKIE_EXPIRES_IN || 1;
 
-// helper to get correct cookie settings
+// 🔥 NUCLEAR OPTION: Force settings that work on Railway
+// We explicitly set SameSite='none' and Secure=true
 const getCookieOptions = () => {
-  const isProduction = environment === "production";
   return {
     httpOnly: true,
-    secure: isProduction, // MUST be true for Railway
-    sameSite: isProduction ? "none" : "lax", // MUST be 'none' for Cross-Domain
+    secure: true,       // ⚠️ MUST be true on Railway (HTTPS)
+    sameSite: "none",   // ⚠️ MUST be 'none' for Cross-Domain
+    maxAge: 24 * 60 * 60 * 1000 
   };
 };
 
@@ -30,34 +29,26 @@ router.post("/login", async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        status: "error",
-        message: "All fields are required",
-      });
+      return res.status(400).json({ status: "error", message: "All fields are required" });
     }
 
     const user = await User.findOne({ email }).populate("role_id");
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid Credentials" });
-    }
-
-    if (user.status !== "active")
-      return res.status(403).json({ message: "User inactive" });
-
-    if (user.role_id.status !== "active")
-      return res.status(403).json({ message: "Your Role is inactive" });
+    if (!user) return res.status(400).json({ message: "Invalid Credentials" });
+    if (user.status !== "active") return res.status(403).json({ message: "User inactive" });
+    if (user.role_id.status !== "active") return res.status(403).json({ message: "Your Role is inactive" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Invalid Credentials" });
 
     const token = generateToken(user._id, user.role_id._id);
 
-    // ✅ FIXED COOKIE OPTIONS
+    // ✅ FORCE COOKIE SETTINGS
     const cookieOptions = {
       ...getCookieOptions(),
       expires: new Date(Date.now() + cookieExpireTime * 24 * 60 * 60 * 1000),
     };
+
+    console.log("Setting Cookie with options:", cookieOptions); // Debug log in Railway Logs
 
     res.cookie("jwt", token, cookieOptions);
 
@@ -82,13 +73,9 @@ router.get("/logout", auth, async (req, res, next) => {
     const { token, expiryAt } = req.tokenDetails;
     await BlacklistedToken.create({ token, expiryAt });
 
-    // ✅ FIXED CLEAR COOKIE OPTIONS
     res.clearCookie("jwt", getCookieOptions());
 
-    return res.status(200).json({
-      status: "success",
-      message: "Logged out successfully.",
-    });
+    return res.status(200).json({ status: "success", message: "Logged out successfully." });
   } catch (error) {
     next(error);
   }
@@ -334,3 +321,4 @@ router.post(
 );
 
 export default router;
+
