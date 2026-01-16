@@ -3,9 +3,21 @@ import { create } from "zustand";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 
+// =========================================================
+// 1. CONFIGURE BASE URL (Fixes the 405 Error)
+// =========================================================
+
+// In Production, use the Backend URL from Env Variable.
+// In Development, use localhost:4000 (or whatever your local backend port is)
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+
+// Set default config for ALL axios requests in this file
+axios.defaults.baseURL = BASE_URL;
+axios.defaults.withCredentials = true; // Important: Allows cookies/sessions to work across domains
+
+// =========================================================
+
 // --- AXIOS INTERCEPTOR ---
-// This is the heart of the permission system.
-// It ensures every request has the correct Menu ID.
 axios.interceptors.request.use(
   (config) => {
     const state = useAuthStore.getState();
@@ -55,7 +67,6 @@ const useAuthStore = create((set, get) => ({
 
   // --- HELPER ACTIONS ---
 
-  // Improved Path Matcher: Handles sub-routes like /docket/create
   setActiveMenuIdByPath: (path) => {
     const { menus } = get();
     if (!menus || menus.length === 0) return;
@@ -67,7 +78,7 @@ const useAuthStore = create((set, get) => ({
 
     if (currentMenu) {
       set({ activeMenuId: currentMenu._id });
-      sessionStorage.setItem("activeMenuId", currentMenu._id); // ✅ ADD THIS
+      sessionStorage.setItem("activeMenuId", currentMenu._id);
     }
   },
 
@@ -75,6 +86,7 @@ const useAuthStore = create((set, get) => ({
 
   checkAuth: async () => {
     try {
+      // Axios will now use BASE_URL automatically
       const response = await axios.get("/api/auth/check");
       set({
         user: response.data.user,
@@ -82,8 +94,6 @@ const useAuthStore = create((set, get) => ({
         isCheckingAuth: false,
       });
       get().connectSocket();
-
-      // Crucial: Load menus immediately so permissions are ready
       await get().fetchMenu();
     } catch (error) {
       if (!import.meta.env.PROD) {
@@ -106,8 +116,6 @@ const useAuthStore = create((set, get) => ({
       set({ user: response.data.user, isAuthenticated: true });
       toast.success(`Welcome, ${response.data.user.name.split(" ")[0]}!`);
       get().connectSocket();
-
-      // Ensure menus are fetched before the user navigates
       await get().fetchMenu();
       return true;
     } catch (error) {
@@ -136,8 +144,6 @@ const useAuthStore = create((set, get) => ({
       const res = await axios.get(`/api/menus/myMenus`);
       const menuList = res.data || [];
       set({ menus: menuList, isMenusLoading: false });
-
-      // After menus load, immediately set the ID for the current URL
       get().setActiveMenuIdByPath(window.location.pathname);
     } catch (err) {
       set({ menus: [], isMenusLoading: false });
@@ -145,7 +151,6 @@ const useAuthStore = create((set, get) => ({
   },
 
   fetchStats: async () => {
-    // If menus haven't loaded yet, we must wait or manually set ID to avoid 403
     if (!get().activeMenuId && get().menus) {
       get().setActiveMenuIdByPath(window.location.pathname);
     }
@@ -179,12 +184,11 @@ const useAuthStore = create((set, get) => ({
     const { user } = get();
     if (!user || get().socket?.connected) return;
 
-    const socket = io(
-      import.meta.env.PROD ? "/" : import.meta.env.VITE_API_URL,
-      {
-        query: { userId: user._id },
-      }
-    );
+    // FIX: Always use the BASE_URL for sockets too
+    const socket = io(BASE_URL, {
+      query: { userId: user._id },
+    });
+    
     socket.connect();
     set({ socket });
   },
