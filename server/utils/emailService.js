@@ -6,33 +6,28 @@ dotenv.config();
 
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED === "true";
 
-// --- OPTION 2 IMPLEMENTATION: Loose Security & High Timeouts ---
+// Create transporter - configured for Gmail (SSL/465)
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, // mail.anovip.asia
-  port: 587,                   // Force 587 for STARTTLS
-  secure: false,               // Must be false for 587
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT) || 465,
+  secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    // These settings help bypass strict firewall/certificate checks
-    rejectUnauthorized: false,
-    ciphers: "SSLv3",
+    // Check if we need to accept self-signed certs (usually not needed for Gmail, but safe to keep)
+    rejectUnauthorized: false, 
   },
-  // INCREASE TIMEOUTS: Give the server 30s to respond before erroring
-  connectionTimeout: 30000, // 30 seconds
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
 });
 
-// Verify connection
-if (process.env.EMAIL_ENABLED === "true") {
+// Verify connection on startup
+if (EMAIL_ENABLED) {
   transporter.verify((error, success) => {
     if (error) {
-        console.error("❌ Email service connection failed:", error.message);
+      console.error("❌ Email service error:", error);
     } else {
-        console.log("✅ Email service ready (Connected to " + process.env.SMTP_HOST + " on Port 587)");
+      console.log("✅ Email service ready (Connected to Gmail)");
     }
   });
 }
@@ -47,17 +42,16 @@ export const sendDeadlineReminder = async (deadline, reminderNumber) => {
     );
     return { success: true, skipped: true };
   }
+
   try {
     const docketInfo = deadline.docket_id
       ? `${deadline.docket_id.docket_no || "N/A"}`
       : "N/A";
 
-    // Fallback: If EMAIL_FROM is blank, use EMAIL_USER to prevent "Relay Denied" errors
-    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
-    const fromName = process.env.EMAIL_FROM_NAME || "anovIP";
-
+    // Prepare email options
     const mailOptions = {
-      from: `"${fromName}" <${fromAddress}>`,
+      from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`, // Note: Gmail might override this to the auth user
+      replyTo: process.env.EMAIL_FROM, // Ensures replies go to the correct address
       to: deadline.emails.join(", "),
       subject: `⏰ Reminder: ${deadline.worktype} - ${deadline.application_no}`,
       html: generateEmailTemplate(deadline, reminderNumber, docketInfo),
@@ -128,12 +122,9 @@ const generateEmailTemplate = (deadline, reminderNumber, docketInfo) => {
     <body>
       <div class="container">
        
-        
         <div class="content">
           <div class="alert">
-            ⚠️ ${daysLeft} Day${
-    daysLeft !== 1 ? "s" : ""
-  } Remaining Until Deadline
+            ⚠️ ${daysLeft} Day${daysLeft !== 1 ? "s" : ""} Remaining Until Deadline
           </div>
 
           <div class="deadline-box">
