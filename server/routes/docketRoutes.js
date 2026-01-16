@@ -140,11 +140,12 @@ router.post("/s3/presigned-url", auth, async (req, res) => {
 // Download/View URL Route
 router.get("/download-url", auth, async (req, res) => {
   try {
-    const { fileKey } = req.query;
+    const { fileKey, filename } = req.query; // ✅ GET filename from query
+    
     if (!fileKey)
       return res.status(400).json({ message: "File key is required" });
 
-    // Check if file exists in S3
+    // Check if file exists (Optional, but good practice)
     try {
       await s3Client.send(
         new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: fileKey })
@@ -153,11 +154,21 @@ router.get("/download-url", auth, async (req, res) => {
       return res.status(404).json({ message: "File not found or deleted" });
     }
 
-    // Generate signed URL
-    const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: fileKey });
+    // ✅ FIX: Tell S3 to force download
+    // If filename is provided, use it. Otherwise default to 'document'
+    const finalFilename = filename ? filename : fileKey.split("/").pop();
+    
+    const command = new GetObjectCommand({ 
+        Bucket: BUCKET_NAME, 
+        Key: fileKey,
+        // 👇 THIS LINE FORCES THE BROWSER TO DOWNLOAD
+        ResponseContentDisposition: `attachment; filename="${finalFilename}"`
+    });
+
     const downloadUrl = await getSignedUrl(s3Client, command, {
       expiresIn: 300,
     });
+    
     res.json({ downloadUrl });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -876,3 +887,4 @@ router.get("/performance", auth, checkPermission, async (req, res) => {
 });
 
 export default router;
+
