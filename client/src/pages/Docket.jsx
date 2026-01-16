@@ -553,18 +553,22 @@ const DocketPage = () => {
     });
   };
 
-  const handleDownloadFile = async (fileKey, filename) => {
+const handleDownloadFile = async (fileKey, filename) => {
     try {
+      // ✅ CHANGE: Pass 'filename' in the query string
       const res = await axios.get(
-        `/api/dockets/download-url?fileKey=${encodeURIComponent(fileKey)}`
+        `/api/dockets/download-url?fileKey=${encodeURIComponent(fileKey)}&filename=${encodeURIComponent(filename)}`
       );
+      
       const link = document.createElement("a");
       link.href = res.data.downloadUrl;
-      link.setAttribute("download", filename);
+      // The download attribute is ignored for cross-origin, but we keep it just in case
+      link.setAttribute("download", filename); 
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
+      console.error(error);
       toast.error("File not found or access denied");
     }
   };
@@ -4141,3 +4145,4 @@ const styles = {
 };
 
 export default DocketPage;
+
