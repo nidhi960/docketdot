@@ -6,27 +6,25 @@ dotenv.config();
 
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED === "true";
 
-// --- FIX START: Updated Transporter Configuration ---
+// --- OPTION 2 IMPLEMENTATION: Loose Security & High Timeouts ---
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  // Force Port 465 to fix "Connection Timeout" on Railway
-  port: 465, 
-  // secure MUST be true for port 465
-  secure: true, 
+  host: process.env.SMTP_HOST, // mail.anovip.asia
+  port: 587,                   // Force 587 for STARTTLS
+  secure: false,               // Must be false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    // This helps prevent handshake errors with custom SMTP servers
+    // These settings help bypass strict firewall/certificate checks
+    rejectUnauthorized: false,
     ciphers: "SSLv3",
-    rejectUnauthorized: false, 
   },
-  // Add timeouts so it doesn't hang forever
-  connectionTimeout: 10000, 
-  greetingTimeout: 10000,
+  // INCREASE TIMEOUTS: Give the server 30s to respond before erroring
+  connectionTimeout: 30000, // 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
-// --- FIX END ---
 
 // Verify connection
 if (process.env.EMAIL_ENABLED === "true") {
@@ -34,7 +32,7 @@ if (process.env.EMAIL_ENABLED === "true") {
     if (error) {
         console.error("❌ Email service connection failed:", error.message);
     } else {
-        console.log("✅ Email service ready (Connected to " + process.env.SMTP_HOST + ")");
+        console.log("✅ Email service ready (Connected to " + process.env.SMTP_HOST + " on Port 587)");
     }
   });
 }
@@ -53,9 +51,8 @@ export const sendDeadlineReminder = async (deadline, reminderNumber) => {
     const docketInfo = deadline.docket_id
       ? `${deadline.docket_id.docket_no || "N/A"}`
       : "N/A";
-    
-    // IMPORTANT: Some SMTP servers block sending as "noreply" if you logged in as "krishna"
-    // We try to use the configured FROM address, but fallback to the authenticated USER to ensure delivery.
+
+    // Fallback: If EMAIL_FROM is blank, use EMAIL_USER to prevent "Relay Denied" errors
     const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
     const fromName = process.env.EMAIL_FROM_NAME || "anovIP";
 
