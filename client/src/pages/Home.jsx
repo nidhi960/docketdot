@@ -10,6 +10,21 @@ export default function Login() {
   const [category, setCategory] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    "Secure IP management built on enterprise-grade AWS cloud infrastructure",
+    "AI-powered docketing management that streamlines and accelerates decision-making",
+    "Modern IP docketing built for accuracy, intelligence, and scale",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 3000); // Changes every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [slides.length]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -85,6 +100,7 @@ export default function Login() {
       maxWidth: "320px",
       lineHeight: "1.6",
       zIndex: 1,
+      minHeight: "55px", // Added this to prevent layout shifting
     },
     dots: {
       display: "flex",
@@ -200,14 +216,25 @@ export default function Login() {
           <span style={styles.logoWhite}>Docket</span>
           <span style={styles.logoOrange}>Dots</span>
         </div>
-        <p style={styles.tagline}>
-          Streamline your IP management workflow with precision and clarity
+
+        {/* --- CHANGED SECTION START --- */}
+        <p
+          style={{ ...styles.tagline, transition: "opacity 0.5s ease-in-out" }}
+        >
+          {slides[currentSlide]}
         </p>
+
         <div style={styles.dots}>
-          <div style={styles.dotInactive}></div>
-          <div style={styles.dotInactive}></div>
-          <div style={styles.dot}></div>
+          {slides.map((_, index) => (
+            <div
+              key={index}
+              style={index === currentSlide ? styles.dot : styles.dotInactive}
+              // Optional: Click to change slide manually
+              onClick={() => setCurrentSlide(index)}
+            ></div>
+          ))}
         </div>
+        {/* --- CHANGED SECTION END --- */}
       </div>
 
       {/* Right Panel - Login Form */}
