@@ -64,7 +64,7 @@ function App() {
       {!hideLayout && <Header appName={appName} />}
 
       <main>
-        <ChatbotWrapper />
+          {isAuthenticated && <ChatbotWrapper />}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route element={<ProtectedRoute />}>
