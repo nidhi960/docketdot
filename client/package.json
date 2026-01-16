@@ -1,5 +1,5 @@
 {
-  "name": "docketdot-client",
+  "name": "client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,20 +10,20 @@
     "postinstall": "npm install --legacy-peer-deps"
   },
   "dependencies": {
-    "@uppy/aws-s3-multipart": "^5.2.0",
-    "@uppy/core": "^5.2.0",
-    "@uppy/dashboard": "^5.2.0",
+    "@uppy/aws-s3-multipart": "^3.11.0",
+    "@uppy/core": "^3.13.0",
+    "@uppy/dashboard": "^3.9.0",
     "@uppy/drag-drop": "^5.1.0",
-    "@uppy/file-input": "^5.2.0",
-    "@uppy/progress-bar": "^5.2.0",
-    "@uppy/react": "^5.2.0",
+    "@uppy/file-input": "^4.2.2",
+    "@uppy/progress-bar": "^4.3.2",
+    "@uppy/react": "^3.4.0",
     "axios": "^1.13.2",
     "emoji-picker-react": "^4.16.1",
     "html2pdf.js": "^0.12.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-quill-new": "^3.7.0",
     "react-router-dom": "^7.10.1",
     "react-toastify": "^11.0.5",
@@ -35,6 +35,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.3.1"
+    "vite": "^7.2.4"
   }
 }
