@@ -10,8 +10,19 @@ import checkPermission from "../middleware/checkPermission.js";
 
 const router = express.Router();
 
+// Ensure NODE_ENV is set to 'production' in Railway Variables
 const environment = process.env.NODE_ENV;
 const cookieExpireTime = process.env.JWT_COOKIE_EXPIRES_IN;
+
+// helper to get correct cookie settings
+const getCookieOptions = () => {
+  const isProduction = environment === "production";
+  return {
+    httpOnly: true,
+    secure: isProduction, // MUST be true for Railway
+    sameSite: isProduction ? "none" : "lax", // MUST be 'none' for Cross-Domain
+  };
+};
 
 /* ---------------- LOGIN ---------------- */
 router.post("/login", async (req, res, next) => {
@@ -42,11 +53,10 @@ router.post("/login", async (req, res, next) => {
 
     const token = generateToken(user._id, user.role_id._id);
 
+    // ✅ FIXED COOKIE OPTIONS
     const cookieOptions = {
+      ...getCookieOptions(),
       expires: new Date(Date.now() + cookieExpireTime * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      secure: environment !== "development",
-      sameSite: "strict",
     };
 
     res.cookie("jwt", token, cookieOptions);
@@ -72,11 +82,8 @@ router.get("/logout", auth, async (req, res, next) => {
     const { token, expiryAt } = req.tokenDetails;
     await BlacklistedToken.create({ token, expiryAt });
 
-    res.clearCookie("jwt", {
-      httpOnly: true,
-      secure: environment !== "development",
-      sameSite: "strict",
-    });
+    // ✅ FIXED CLEAR COOKIE OPTIONS
+    res.clearCookie("jwt", getCookieOptions());
 
     return res.status(200).json({
       status: "success",
@@ -148,7 +155,6 @@ router.post("/bulk-import", auth, checkPermission, async (req, res, next) => {
       try {
         const { name, email, department, role_name, status } = row;
 
-        // Required validation
         if (!email || !role_name) {
           failed++;
           errors.push({
@@ -159,7 +165,6 @@ router.post("/bulk-import", auth, checkPermission, async (req, res, next) => {
           continue;
         }
 
-        // Duplicate email check
         if (await User.findOne({ email })) {
           failed++;
           errors.push({
@@ -170,7 +175,6 @@ router.post("/bulk-import", auth, checkPermission, async (req, res, next) => {
           continue;
         }
 
-        // Role lookup by name
         const role = await Role.findOne({
           name: new RegExp(`^${role_name}$`, "i"),
         });
@@ -185,7 +189,6 @@ router.post("/bulk-import", auth, checkPermission, async (req, res, next) => {
           continue;
         }
 
-        // Generate credentials
         const e_id = await generateEmployeeId(role.name, User);
         const rawPassword = generatePassword();
         const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -255,7 +258,6 @@ router.get("/clients", auth, checkPermission, async (req, res, next) => {
       })
       .sort({ createdAt: -1 });
 
-    // Remove users whose role didn't match
     const clients = users.filter((u) => u.role_id !== null);
 
     res.json(clients);
@@ -308,7 +310,6 @@ router.post(
     try {
       const { password } = req.body;
 
-      // validation
       if (!password || password.length < 6) {
         return res
           .status(400)
@@ -320,7 +321,6 @@ router.post(
         return res.status(404).json({ message: "User not found" });
       }
 
-      // bcrypt password
       const hashedPassword = await bcrypt.hash(password, 10);
 
       user.password = hashedPassword;
