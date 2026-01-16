@@ -267,11 +267,13 @@ export default function ChatPage() {
     }
   };
 
-  const handleDownload = async (fileKey, filename) => {
+const handleDownload = async (fileKey, filename) => {
     try {
       const cleanKey = fileKey.startsWith("/") ? fileKey.substring(1) : fileKey;
+      
+      // ✅ FIX: Pass the filename as a query parameter
       const res = await axios.get(
-        `/api/chat/download-url?fileKey=${encodeURIComponent(cleanKey)}`
+        `/api/chat/download-url?fileKey=${encodeURIComponent(cleanKey)}&filename=${encodeURIComponent(filename)}`
       );
       const { downloadUrl } = res.data;
 
@@ -1280,3 +1282,4 @@ export default function ChatPage() {
     </div>
   );
 }
+
