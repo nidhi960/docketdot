@@ -1,26 +1,41 @@
 // utils/emailService.js
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED === "true";
 
-// Create transporter - configure with your email provider
+// --- FIX START: Updated Transporter Configuration ---
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false, // false for STARTTLS (port 587)
+  // Force Port 465 to fix "Connection Timeout" on Railway
+  port: 465, 
+  // secure MUST be true for port 465
+  secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false, // helps with self-signed certs
+    // This helps prevent handshake errors with custom SMTP servers
+    ciphers: "SSLv3",
+    rejectUnauthorized: false, 
   },
+  // Add timeouts so it doesn't hang forever
+  connectionTimeout: 10000, 
+  greetingTimeout: 10000,
 });
+// --- FIX END ---
 
 // Verify connection
 if (process.env.EMAIL_ENABLED === "true") {
   transporter.verify((error, success) => {
-    if (error) console.error("❌ Email service error:", error);
-    // else console.log("✅ Email service ready");
+    if (error) {
+        console.error("❌ Email service connection failed:", error.message);
+    } else {
+        console.log("✅ Email service ready (Connected to " + process.env.SMTP_HOST + ")");
+    }
   });
 }
 
@@ -38,11 +53,14 @@ export const sendDeadlineReminder = async (deadline, reminderNumber) => {
     const docketInfo = deadline.docket_id
       ? `${deadline.docket_id.docket_no || "N/A"}`
       : "N/A";
+    
+    // IMPORTANT: Some SMTP servers block sending as "noreply" if you logged in as "krishna"
+    // We try to use the configured FROM address, but fallback to the authenticated USER to ensure delivery.
+    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const fromName = process.env.EMAIL_FROM_NAME || "anovIP";
 
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME || "anovIP"}" <${
-        process.env.EMAIL_FROM
-      }>`,
+      from: `"${fromName}" <${fromAddress}>`,
       to: deadline.emails.join(", "),
       subject: `⏰ Reminder: ${deadline.worktype} - ${deadline.application_no}`,
       html: generateEmailTemplate(deadline, reminderNumber, docketInfo),
