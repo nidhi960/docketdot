@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import dbConnect from "./config/db.js";
+// Route imports...
 import chatbotRoutes from "./routes/chatBot.js";
 import authRoutes from "./routes/authRoutes.js";
 import rbacRoutes from "./routes/rbac.js";
@@ -24,24 +25,46 @@ import { startReminderCron } from "./jobs/deadlineReminderCron.js";
 
 dotenv.config({ quiet: true });
 
-// Fix for __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const PORT = process.env.PORT || 8080;
+
+// ✅ FIX 1: Create the Server INSTANCE first
+const server = http.createServer(app);
 
 /* -----------------------------
-   Middlewares
+   Middlewares (FIXED CORS)
 ----------------------------- */
+// Define allowed origins explicitly
+const allowedOrigins = [
+  "http://localhost:5173", // Local Development
+  "http://localhost:8080", // Local Preview
+  "https://docketdot-production-9384.up.railway.app", // 👈 YOUR FRONTEND URL
+  process.env.CORS_ALLOWED_ORIGINS // Allow env variable too
+];
+
 app.use(
   cors({
-    origin: process.env.CORS_ALLOWED_ORIGINS?.split(",") || "*",
-    credentials: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or server-to-server)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        console.log("Blocked by CORS:", origin); // Debugging help
+        return callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // ✅ This now works because we don't use '*'
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-menu-id"]
   })
 );
-app.use(cookieParser());
 
-// Increased limit to handle larger form data/document metadata
+app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -91,16 +114,12 @@ app.use((err, req, res, next) => {
 clearBlacklistedTokenScheduler;
 
 /* -----------------------------
-   HTTP + SOCKET SERVER
+   HTTP + SOCKET SERVER (FIXED)
 ----------------------------- */
-const PORT = process.env.PORT || 8080;
-const server = http.createServer(app);
-
-// Initialize Socket.IO
+// Initialize Socket.IO with the server instance
 initSocket(server);
 
-app.listen(PORT, '0.0.0.0', () => {
+// ✅ FIX 2: Listen on 'server', NOT 'app'
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on ${PORT}`);
 });
-
-
