@@ -1085,8 +1085,8 @@ const handleDownload = async (fileKey, filename) => {
                 >
                   <EmojiPicker
                     onEmojiClick={onEmojiClick}
-                    width={400}
-                    height={500}
+                    width={300}
+                    height={400}
                   />
                 </div>
               )}
@@ -1282,4 +1282,5 @@ const handleDownload = async (fileKey, filename) => {
     </div>
   );
 }
+
 
