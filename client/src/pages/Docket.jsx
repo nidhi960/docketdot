@@ -3946,6 +3946,9 @@ const styles = {
     alignItems: "center",
     padding: "15px 20px",
     borderBottom: "1px solid #f3f4f6",
+    position: "sticky",
+    top: 0,
+    background: "white",
   },
   tabsContainer: { display: "flex", gap: "5px" },
   tabBtn: {
@@ -4145,4 +4148,5 @@ const styles = {
 };
 
 export default DocketPage;
+
 
