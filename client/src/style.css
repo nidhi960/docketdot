@@ -680,3 +680,12 @@ span:hover {
 .chat-messages {
   transition: all 0.3s ease;
 }
+
+[data-uppy-drag-drop-supported=true] .uppy-Dashboard-AddFiles {
+    border: 5px dashed #dfdfdf;
+    border-radius: 3px;
+    height: calc(100% - 14px);
+    margin: 40px;
+    padding: 20px;
+}
+
