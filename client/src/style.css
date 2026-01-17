@@ -428,6 +428,7 @@ span:hover {
     max-width: 100% !important;
     flex: 1 !important;
     height: 83vh !important;
+    padding-bottom: 20px;
   }
 
   .chat-messages {
@@ -616,7 +617,7 @@ span:hover {
   }
 
   .chat-main .border-top .btn {
-    width: 34px;
+    width: 54px;
     height: 34px;
   }
 
