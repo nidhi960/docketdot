@@ -12,17 +12,29 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // --- 1. NEW STATE: Track Screen Width ---
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   const slides = [
-    "Modern IP docketing built for accuracy, intelligence, and scale",
-    "AI-powered docketing management that streamlines and accelerates decision-making",
     "Secure IP management built on enterprise-grade AWS cloud infrastructure",
+    "AI-powered docketing management that streamlines and accelerates decision-making",
+    "Modern IP docketing built for accuracy, intelligence, and scale",
   ];
+
+  // --- 2. NEW EFFECT: Handle Resize ---
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 3000); // Changes every 3 seconds
-
+    }, 3000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
@@ -54,6 +66,8 @@ export default function Login() {
       right: 0,
       bottom: 0,
       display: "flex",
+      // --- CHANGE: Switch direction on mobile ---
+      flexDirection: isMobile ? "column" : "row",
       minHeight: "100vh",
       width: "100%",
       margin: 0,
@@ -63,13 +77,15 @@ export default function Login() {
       flex: 1,
       background:
         "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f1a 100%)",
-      display: "flex",
+
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
       padding: "40px",
       position: "relative",
       overflow: "hidden",
+      // --- CHANGE: Hide the left panel completely on mobile ---
+      display: isMobile ? "none" : "flex",
     },
     leftPanelOverlay: {
       position: "absolute",
@@ -87,11 +103,21 @@ export default function Login() {
       marginBottom: "16px",
       zIndex: 1,
     },
+    // --- NEW: Mobile Logo Styles ---
+    mobileLogoContainer: {
+      display: isMobile ? "block" : "none",
+      textAlign: "center",
+      marginBottom: "30px",
+    },
     logoWhite: {
       color: "#ffffff",
     },
     logoOrange: {
       color: "#f97316",
+    },
+    // Used for the mobile version (Dark text)
+    logoDark: {
+      color: "#1f2937",
     },
     tagline: {
       color: "#9ca3af",
@@ -100,7 +126,8 @@ export default function Login() {
       maxWidth: "320px",
       lineHeight: "1.6",
       zIndex: 1,
-      minHeight: "55px", // Added this to prevent layout shifting
+      minHeight: "55px",
+      transition: "opacity 0.5s ease-in-out",
     },
     dots: {
       display: "flex",
@@ -126,7 +153,8 @@ export default function Login() {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      padding: "40px",
+      // --- CHANGE: Reduce padding on mobile ---
+      padding: isMobile ? "20px" : "40px",
     },
     formContainer: {
       width: "100%",
@@ -209,44 +237,44 @@ export default function Login() {
 
   return (
     <div style={styles.container}>
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Branding (Hidden on Mobile via Styles) */}
       <div style={styles.leftPanel}>
         <div style={styles.leftPanelOverlay}></div>
         <div style={styles.logo}>
           <span style={styles.logoWhite}>Docket</span>
           <span style={styles.logoOrange}>Dots</span>
         </div>
-
-        {/* --- CHANGED SECTION START --- */}
-        <p
-          style={{ ...styles.tagline, transition: "opacity 0.5s ease-in-out" }}
-        >
-          {slides[currentSlide]}
-        </p>
-
+        <p style={styles.tagline}>{slides[currentSlide]}</p>
         <div style={styles.dots}>
           {slides.map((_, index) => (
             <div
               key={index}
               style={index === currentSlide ? styles.dot : styles.dotInactive}
-              // Optional: Click to change slide manually
               onClick={() => setCurrentSlide(index)}
             ></div>
           ))}
         </div>
-        {/* --- CHANGED SECTION END --- */}
       </div>
 
       {/* Right Panel - Login Form */}
       <div style={styles.rightPanel}>
         <div style={styles.formContainer}>
+          {/* --- 3. NEW: Mobile-only Logo (Since Left Panel is hidden) --- */}
+          {isMobile && (
+            <div style={styles.mobileLogoContainer}>
+              <div style={styles.logo}>
+                <span style={styles.logoDark}>Docket</span>
+                <span style={styles.logoOrange}>Dots</span>
+              </div>
+            </div>
+          )}
+
           <h1 style={styles.welcomeTitle}>Welcome back</h1>
           <p style={styles.welcomeSubtitle}>
             Enter your credentials to access your account
           </p>
 
           <form onSubmit={handleLogin}>
-            {/* Category */}
             <div style={styles.inputWrapper}>
               <label style={styles.label}>Category</label>
               <select
@@ -269,7 +297,6 @@ export default function Login() {
               </select>
             </div>
 
-            {/* Email */}
             <div style={styles.inputWrapper}>
               <label style={styles.label}>Email</label>
               <input
@@ -291,7 +318,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
             <div style={styles.inputWrapper}>
               <label style={styles.label}>Password</label>
               <input
@@ -313,20 +339,15 @@ export default function Login() {
               />
             </div>
 
-            {/* Button */}
             <button
               type="submit"
               style={loading ? styles.buttonDisabled : styles.button}
               disabled={loading}
               onMouseEnter={(e) => {
-                if (!loading) {
-                  e.target.style.backgroundColor = "#ea580c";
-                }
+                if (!loading) e.target.style.backgroundColor = "#ea580c";
               }}
               onMouseLeave={(e) => {
-                if (!loading) {
-                  e.target.style.backgroundColor = "#f97316";
-                }
+                if (!loading) e.target.style.backgroundColor = "#f97316";
               }}
             >
               {loading ? "Signing in..." : "Sign In"}
@@ -337,4 +358,3 @@ export default function Login() {
     </div>
   );
 }
-
